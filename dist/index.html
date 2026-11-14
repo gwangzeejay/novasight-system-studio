@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="vi">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#101713"><meta name="description" content="Khám phá luồng cảm biến, dự đoán gậy và phản hồi rung của NovaSight trong mô phỏng 3D tương tác."><title>NovaSight · CaneSync System Studio</title><link rel="stylesheet" href="./style.css"><script defer src="./studio.js"></script></head>
+<body>
+<header><a class="brand" href="#" aria-label="NovaSight System Studio"><span class="brandmark">N<span>◦</span></span><span>NOVASIGHT<small>SYSTEM STUDIO</small></span></a><div class="project-meta">CANESYNC <span>/</span> REV A P1 <span>/</span> v3.0</div><div class="header-actions"><span class="demo-indicator">Dữ liệu giả lập</span><button id="sourcesBtn">Tài liệu & mô hình ↗</button><button id="fullscreen" aria-label="Toàn màn hình" title="Toàn màn hình">⛶</button></div></header>
+<main>
+<section class="viewport" aria-label="Mô hình 3D hệ thống">
+ <div id="scene"></div><div id="webglError" hidden>Trình duyệt không khởi tạo được WebGL. Các điều khiển, công thức và nhật ký vẫn sử dụng được.</div>
+ <div class="scene-heading"><div class="eyebrow">MÔ PHỎNG CÓ THỂ KHÁM PHÁ</div><h1>Đi theo<br><em>từng tín hiệu.</em></h1><p>Nhìn bên trong cách NovaSight<br>quan sát, dự đoán và cảnh báo.</p></div>
+ <div class="view-controls"><button data-view="overview" class="active">Toàn cảnh</button><button data-view="chest">Chest</button><button data-view="clip">Clip</button><button data-view="sensor">Vùng đo</button><button id="explode" aria-pressed="false">Tách lớp</button></div>
+ <div id="labels" aria-hidden="true"></div>
+ <div class="observation-controls"><label><input id="showTruth" type="checkbox" checked> Thế giới</label><label><input id="showObserved" type="checkbox" checked> Quan sát</label><label><input id="showPrediction" type="checkbox" checked> Dự đoán 3 s</label><button id="openWorkbench">Phòng lab ↗</button></div>
+ <div class="stage-caption"><span id="cameraLabel">01 — TOÀN HỆ THỐNG</span><span>Kéo để xoay · Cuộn để zoom · Chạm thiết bị để khám phá</span></div>
+ <div class="status-ribbon"><div><i class="status-dot"></i><span id="modeLabel">TUNNEL</span></div><div>CLIP <b id="packetAge">0 ms</b></div><div>VÒNG QUYẾT ĐỊNH <b>20 Hz*</b></div><small>* Nhịp thiết kế</small></div>
+</section>
+<aside class="inspector">
+ <nav class="inspector-tabs" aria-label="Nội dung"><button data-tab="flow" class="active">Luồng chạy</button><button data-tab="lab">Tình huống</button><button data-tab="sensors">Dữ liệu</button><button data-tab="hardware">Phần cứng</button></nav>
+ <div id="flowPanel" class="panel">
+  <div id="chapterTag" class="eyebrow"></div><h2 id="chapterTitle"></h2><p id="chapterText" class="lead"></p><ol id="chapterSteps" class="explain-steps"></ol>
+  <div class="source-ref" id="chapterSource"></div>
+  <div class="data-heading">ĐẦU RA TẠI THỜI ĐIỂM NÀY <span id="sampleTime">0.00 s</span></div>
+  <div class="decision"><span id="decisionCode">—</span><div><h3 id="decisionTitle">Khởi tạo</h3><p id="decisionMode">Thu nhịp quét gậy</p></div></div>
+  <p id="reason" class="reason"></p>
+  <div class="metrics"><div><small>TTC thân</small><strong id="ttc">—</strong></div><div><small>Điểm P gậy</small><strong id="prob">—</strong></div><div><small>Gậy trước thân</small><strong id="margin">—</strong></div></div>
+  <div class="haptic-display"><div><span>VAI TRÁI</span><div class="motor-track"><i id="motorL"></i></div></div><div><span>VAI PHẢI</span><div class="motor-track"><i id="motorR"></i></div></div></div>
+  <p class="micro" id="comparison"></p>
+  <div class="gates" id="gates" aria-label="Các cổng quyết định"></div>
+  <button id="signalBtn" class="signal-open">Mở sơ đồ dữ liệu & ngân sách thời gian ↗</button>
+  <details class="packet"><summary>Kiểm tra gói CaneState</summary><pre id="packet"></pre></details>
+ </div>
+ <div id="labPanel" class="panel" hidden>
+  <div class="eyebrow">THAY ĐỔI ĐẦU VÀO · XEM KẾT QUẢ</div><h2>Bàn thử tình huống</h2><label class="field">Tình huống<select id="scenario"></select></label><p id="scenarioNote" class="lead"></p>
+  <div class="lab-result"><b id="labCode">—</b><span id="labReason"></span></div>
+  <label class="field">Chính sách<select id="policy"><option value="canesync">CaneSync · dùng vùng gậy</option><option value="tunnel">Tunnel · hành lang thân</option></select></label>
+  <div id="sliders"></div>
+  <details open><summary>Thử lỗi & điều kiện</summary><div id="faults" class="faults"></div></details>
+  <div class="lab-actions"><button id="runEncounter" class="primary">▶ Chạy tiếp cận</button><button id="resetLab">↺ Đặt lại</button></div><p id="encounterStatus" class="micro">Phân tích tại khoảng cách cố định. Chạy tiếp cận sẽ thu quét 3 s trước khi tiến về vật.</p>
+  <div class="quality-block" id="quality"></div><button id="logBtn" class="text-button">Xem nhật ký quyết định ↗</button>
+ </div>
+ <div id="sensorsPanel" class="panel" hidden>
+  <div class="eyebrow">THẾ GIỚI → ĐO → NHẬN THỨC</div><h2>Thiết bị thấy gì?</h2><p class="lead">Tia đo giao với hình học cảnh. Ô lỗi không cấp bằng chứng. Chọn một ô để xem khoảng cách và điểm đã khôi phục.</p>
+  <div id="sensorSummary" class="quality-block"></div><div id="tofGrid" class="tof-grid" aria-label="Các ô ToF"></div><pre id="cellDetail"></pre>
+  <div class="sensor-legend"><span>● Nền</span><span>● Vật nổi</span><span>● Mép thấp</span><span>× Không hợp lệ</span></div>
+  <details><summary>Tham số cảm biến / BLE / motor</summary><div id="sensorSettings"></div><p class="micro">Các mức sai số là giả định để thử mô hình, không phải thông số đã đo. Thay cấu hình bắt đầu một bản ghi mới.</p></details>
+  <label class="field">Chuỗi lỗi tự động<select id="faultScript"><option value="ble">BLE mất ở 3,5 s → phục hồi ở 5 s</option><option value="sun">Mất độ sâu ở 4 s → phục hồi ở 6 s</option><option value="sweep">Dừng quét ở 3,5 s → quét lại ở 5 s</option></select></label><button id="runFaultScript" class="primary">Chạy chuỗi lỗi</button>
+  <button class="signal-open" id="traceOpen">Truy nguyên cảnh báo & sự kiện ↗</button><button class="signal-open" id="builderOpen">Dựng cảnh nhiều vật ↗</button><button class="signal-open" id="replayOpen">Nhập log & video ↗</button><button class="signal-open" id="reportOpen">So sánh & kiểm thử lỗi ↗</button>
+ </div>
+ <div id="hardwarePanel" class="panel" hidden>
+  <div class="eyebrow">CẬN CẢNH · CAD + SƠ ĐỒ CHỨC NĂNG</div><h2>Bên trong thiết bị</h2><p class="lead">Chọn một khối để đưa camera đến thiết bị và xem đường đi của tín hiệu.</p><div id="hardwareList"></div><div class="hardware-detail" id="hardwareDetail"></div>
+  <p class="micro">Vỏ được tái sử dụng từ CAD trong dự án. Vị trí linh kiện và dây sáng bổ sung là minh họa chức năng; không thay bản vẽ lắp ráp PCB.</p>
+ </div>
+</aside>
+</main>
+<footer class="transport">
+ <div class="transport-top"><div class="playback"><button id="play" class="play" aria-label="Phát hoặc tạm dừng">▶</button><button id="restart" aria-label="Chạy lại từ đầu">↺</button><div><strong id="transportTitle">Khám phá vòng vận hành</strong><small id="transportState">8 chương · camera cinematic · dữ liệu giả lập</small></div></div><div class="transport-options"><label><input type="checkbox" id="cinematic" checked> Camera cinematic</label><select id="speed" aria-label="Tốc độ trình diễn"><option value=".5">0,5×</option><option value="1" selected>1×</option><option value="2">2×</option></select><button id="export">Xuất log ↓</button><span id="timecode">00:00 / 01:12</span></div></div>
+ <input id="scrubber" type="range" min="0" max="72" step=".1" value="0" aria-label="Dòng thời gian thuyết minh">
+ <div id="chapters" class="chapters"></div>
+ <div class="record-transport"><span id="recordOrigin">BẢN GHI MÔ PHỎNG</span><button id="stepBack" aria-label="Lùi 50 mili giây">−50 ms</button><button id="stepNext" aria-label="Tiến 50 mili giây">+50 ms</button><input id="recordTime" type="range" min="0" max="0.05" step=".01" value="0" aria-label="Tua dữ liệu đã ghi"><output id="recordClock">0,00 s</output><button id="returnLive">Về hiện tại</button></div>
+</footer>
+<dialog id="labDialog"><div class="dialog-top"><span class="eyebrow">ENGINE LAB · CẢM BIẾN / THỜI GIAN / BẰNG CHỨNG</span><button id="closeLab" aria-label="Đóng phòng lab">✕</button></div><nav class="workbench-tabs"><button data-work="trace" class="active">Truy vết</button><button data-work="builder">Dựng cảnh</button><button data-work="replay">Phát lại log</button><button data-work="report">Đánh giá</button></nav>
+ <section id="work-trace"><h2>Mỗi cảnh báo có một đường đi</h2><p>Chọn sự kiện để tua đến trạng thái tương ứng; chọn bản ghi cha để lần về dữ liệu nguồn. Trạng thái 3D lấy mẫu mỗi 50 ms; sự kiện giữ timestamp riêng.</p><label class="field">Loại sự kiện<select id="eventFilter"><option value="important">Hazard / quyết định / motor / lỗi</option><option value="TOF">ToF</option><option value="IMU">IMU</option><option value="BLE">BLE</option><option value="ALL">Tất cả</option></select></label><div class="trace-layout"><div id="eventList"></div><div><div id="eventParents"></div><pre id="eventDetail">Chọn một sự kiện.</pre></div></div></section>
+ <section id="work-builder" hidden><h2>Dựng tình huống của bạn</h2><p>Kéo vật trên sơ đồ nhìn từ trên xuống. Trục dọc là phía trước người; trục ngang là trái/phải. Tối đa 8 vật cùng xuất hiện.</p><div class="builder-layout"><div><canvas id="editorCanvas" width="520" height="400" aria-label="Sơ đồ kéo thả vật cản"></canvas><div class="builder-actions"><select id="addKind" aria-label="Loại vật"><option value="grounded">Vật sát đất</option><option value="upper">Thanh treo</option><option value="moving">Người tiến tới</option><option value="drop">Mép hụt</option><option value="water">Vũng nước</option></select><button id="addObject">+ Thêm</button><button id="removeObject">Xóa vật chọn</button></div></div><div><label class="field">Vật đang chọn<select id="objectSelect"></select></label><div id="objectFields"></div><button id="applyWorld" class="primary">Áp dụng & quan sát 3D</button><div class="builder-actions"><button id="saveWorld">Lưu cảnh ↓</button><label class="file-button">Mở cảnh<input id="loadWorld" type="file" accept=".json,application/json"></label></div><p class="micro">Cảnh được lưu trong trình duyệt. Tệp JSON cho phép chia sẻ và chạy lại cùng cấu hình.</p></div></div></section>
+ <section id="work-replay" hidden><h2>Phát lại cảm biến và video</h2><p>Nhập log JSON theo schema đã công bố. Bộ nhận thức và chính sách được chạy lại từ phép đo; không tin trực tiếp kết quả quyết định có sẵn trong tệp.</p><div class="builder-actions"><label class="file-button primary">Nhập log JSON<input id="importLog" type="file" accept=".json,application/json"></label><button id="exampleLog">Tải log mẫu giả lập ↓</button><button id="schemaDoc">Định dạng dữ liệu ↓</button></div><p id="importStatus" role="status"></p><p class="micro">Giới hạn 32 MB, 25.000 bản ghi, 120 s; cần ToF. ToF dùng mét, sigma dùng mm, thời gian dùng ms. Chưa có log nguyên mẫu được cung cấp để xác nhận khả năng đọc dữ liệu thực địa.</p><details><summary>Định dạng ngắn</summary><pre id="schemaPreview"></pre></details><h3>Video đối chiếu cục bộ</h3><label class="file-button">Chọn video<input id="videoFile" type="file" accept="video/*"></label><label class="field">Độ lệch video (s): thời gian video = thời gian log + độ lệch<input id="videoOffset" type="number" value="0" step=".1" min="-120" max="120"></label><video id="referenceVideo" controls playsinline hidden></video><button id="syncVideo">Đưa video về mốc đang xem</button><p class="micro">Video chỉ được mở trên trình duyệt, không tải lên máy chủ. Đồng bộ mốc thủ công; không tự căn chỉnh hai đồng hồ.</p></section>
+ <section id="work-report" hidden><h2>Cùng đầu vào. Hai chính sách.</h2><p>So CaneSync và Tunnel trên cùng chuỗi phép đo, không thay đổi quỹ đạo người theo phản ứng rung. Đây là đối chứng chính sách; không suy ra hiệu quả người dùng.</p><div id="reportStats"></div><canvas id="decisionChart" width="860" height="170" aria-label="Dòng thời gian quyết định của hai chính sách"></canvas><div class="builder-actions"><button id="exportReport">Xuất báo cáo CSV ↓</button><button id="runSuite" class="primary">Chạy bộ thử lỗi</button></div><div id="suiteResults"></div></section>
+</dialog>
+<dialog id="detailsDialog"><div class="dialog-top"><span class="eyebrow" id="dialogEyebrow">THAM CHIẾU</span><button id="closeDialog" aria-label="Đóng">✕</button></div><div id="dialogBody"></div></dialog>
+<div id="toast" role="status"></div>
+<noscript>Vui lòng bật JavaScript để sử dụng mô phỏng 3D.</noscript>
+</body></html>
